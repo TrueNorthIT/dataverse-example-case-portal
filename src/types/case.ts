@@ -41,3 +41,4 @@ export type SortField = "ticketnumber" | "title" | "statuscode" | "prioritycode"
 export type SortDir = "asc" | "desc";
 export type GroupBy = "none" | "statuscode" | "prioritycode" | "casetypecode";
 export type Tab = "me" | "team";
+export type StatFilter = "total" | "active" | "resolved" | "high" | null;

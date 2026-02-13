@@ -45,6 +45,8 @@ export function App() {
         firstName={firstName}
         stats={cases.stats}
         loading={cases.activeLoading}
+        activeFilter={cases.statFilter}
+        onFilterChange={cases.handleStatFilter}
       />
 
       <div className="max-w-7xl mx-auto px-6 py-6">

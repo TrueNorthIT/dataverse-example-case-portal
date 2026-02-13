@@ -1,3 +1,5 @@
+import type { StatFilter } from "../types/case";
+
 interface Stats {
   total: number;
   active: number;
@@ -9,6 +11,8 @@ interface HeroSectionProps {
   firstName: string;
   stats: Stats;
   loading: boolean;
+  activeFilter: StatFilter;
+  onFilterChange: (key: StatFilter) => void;
 }
 
 const STAT_CARDS = [
@@ -18,7 +22,7 @@ const STAT_CARDS = [
   { key: "high" as const, label: "High Priority", icon: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" },
 ];
 
-export function HeroSection({ firstName, stats, loading }: HeroSectionProps) {
+export function HeroSection({ firstName, stats, loading, activeFilter, onFilterChange }: HeroSectionProps) {
   return (
     <div className="bg-gradient-to-r from-tn-navy via-tn-navy-light to-tn-navy">
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -30,22 +34,31 @@ export function HeroSection({ firstName, stats, loading }: HeroSectionProps) {
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-          {STAT_CARDS.map((s) => (
-            <div
-              key={s.label}
-              className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/10"
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <svg className="w-4 h-4 text-tn-sky/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
-                </svg>
-                <span className="text-[11px] text-tn-sky/60 uppercase tracking-wider font-medium">{s.label}</span>
-              </div>
-              <span className="text-2xl font-bold text-white">
-                {loading ? "—" : stats[s.key]}
-              </span>
-            </div>
-          ))}
+          {STAT_CARDS.map((s) => {
+            const isActive = activeFilter === s.key;
+            return (
+              <button
+                key={s.label}
+                type="button"
+                onClick={() => onFilterChange(s.key)}
+                className={`text-left rounded-xl px-4 py-3 border backdrop-blur-sm transition-all cursor-pointer ${
+                  isActive
+                    ? "bg-white/25 border-tn-sky ring-2 ring-tn-sky/40"
+                    : "bg-white/10 border-white/10 hover:bg-white/15 hover:border-white/20"
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <svg className={`w-4 h-4 ${isActive ? "text-tn-sky" : "text-tn-sky/60"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d={s.icon} />
+                  </svg>
+                  <span className={`text-[11px] uppercase tracking-wider font-medium ${isActive ? "text-tn-sky" : "text-tn-sky/60"}`}>{s.label}</span>
+                </div>
+                <span className="text-2xl font-bold text-white">
+                  {loading ? "—" : stats[s.key]}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

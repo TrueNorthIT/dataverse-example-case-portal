@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import type { Case, CaseNote, Tab, SortField, SortDir, GroupBy } from "../types/case";
+import type { Case, CaseNote, Tab, SortField, SortDir, GroupBy, StatFilter } from "../types/case";
 import * as api from "../services/caseApi";
 import { compareCases } from "../utils/style";
 
@@ -23,6 +23,7 @@ export function useCases() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [statFilter, setStatFilter] = useState<StatFilter>(null);
 
   // Case detail state
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
@@ -146,10 +147,18 @@ export function useCases() {
   const activeLoading = activeTab === "me" ? myLoading : teamLoading;
   const activeError = activeTab === "me" ? myError : teamError;
 
+  const statFiltered = useMemo(() => {
+    if (!statFilter || statFilter === "total") return activeCases;
+    if (statFilter === "active") return activeCases.filter((c) => c.statecode === 0);
+    if (statFilter === "resolved") return activeCases.filter((c) => c.statecode === 1);
+    if (statFilter === "high") return activeCases.filter((c) => c.prioritycode === 1);
+    return activeCases;
+  }, [activeCases, statFilter]);
+
   const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return activeCases;
+    if (!searchQuery.trim()) return statFiltered;
     const q = searchQuery.toLowerCase();
-    return activeCases.filter(
+    return statFiltered.filter(
       (c) =>
         c.ticketnumber?.toLowerCase().includes(q) ||
         c.title?.toLowerCase().includes(q) ||
@@ -157,7 +166,7 @@ export function useCases() {
         c.prioritycode_label?.toLowerCase().includes(q) ||
         c.casetypecode_label?.toLowerCase().includes(q),
     );
-  }, [activeCases, searchQuery]);
+  }, [statFiltered, searchQuery]);
 
   const sorted = useMemo(
     () => [...filtered].sort((a, b) => compareCases(a, b, sortField, sortDir)),
@@ -203,6 +212,10 @@ export function useCases() {
     [sortField],
   );
 
+  const handleStatFilter = useCallback((key: StatFilter) => {
+    setStatFilter((prev) => (prev === key ? null : key));
+  }, []);
+
   const toggleGroup = useCallback((key: string) => {
     setExpandedGroups((prev) => {
       const next = new Set(prev);
@@ -238,6 +251,8 @@ export function useCases() {
     setGroupBy,
     expandedGroups,
     toggleGroup,
+    statFilter,
+    handleStatFilter,
 
     // Derived
     filtered,
