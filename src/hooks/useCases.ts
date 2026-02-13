@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { ApiError } from "dataverse-contact-api";
+import { ApiError } from "@truenorth-it/dataverse-contact-api";
 import type { Case, CaseNote, Tab, SortField, SortDir, GroupBy } from "../types/case";
 import { useApiClient } from "../services/caseApi";
 import { compareCases } from "../utils/style";
