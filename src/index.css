@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/* ── TrueNorth Theme ─────────────────────────────────────────────── */
+@theme {
+  /* Primary brand colours */
+  --color-tn-navy: #001C4D;
+  --color-tn-navy-light: #003B63;
+  --color-tn-sky: #80D0DE;
+  --color-tn-sky-light: #a0dde8;
+  --color-tn-sky-pale: #cfe9ef;
+  --color-tn-white: #F5F5F5;
+
+  /* Secondary brand colours */
+  --color-tn-teal: #188998;
+  --color-tn-mint: #85C8B3;
+
+  /* Derived UI colours (darker bias) */
+  --color-tn-dark: #00112e;
+  --color-tn-slate: #3a5d76;
+  --color-tn-muted: #587f94;
+  --color-tn-border: #a8c8d6;
+  --color-tn-bg: #e6eff4;
+  --color-tn-success: #188998;
+  --color-tn-error: #ef4444;
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+}
+
+/* ── Base resets ──────────────────────────────────────────────────── */
+body {
+  @apply m-0 p-0 bg-tn-bg font-sans text-tn-navy antialiased;
+}
+
+/* ── Scrollbar styling ───────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-tn-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-tn-slate);
+}
