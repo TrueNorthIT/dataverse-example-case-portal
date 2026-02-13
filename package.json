@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.2.4",
+    "dataverse-contact-api": "git+https://github.com/TrueNorthIT/dataverse-contact-api.git#main",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

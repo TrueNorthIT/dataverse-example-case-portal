@@ -1,11 +1,23 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { ApiError } from "dataverse-contact-api";
 import type { Case, CaseNote, Tab, SortField, SortDir, GroupBy } from "../types/case";
-import * as api from "../services/caseApi";
+import { useApiClient } from "../services/caseApi";
 import { compareCases } from "../utils/style";
 
+const CASE_FIELDS = [
+  "incidentid", "ticketnumber", "title", "statuscode", "statecode",
+  "prioritycode", "casetypecode", "createdon", "modifiedon",
+];
+
+const NOTES_FIELDS = [
+  "annotationid", "subject", "notetext", "isdocument",
+  "filename", "filesize", "createdon", "modifiedon",
+];
+
 export function useCases() {
-  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const { isAuthenticated } = useAuth0();
+  const client = useApiClient();
 
   // Data state
   const [myCases, setMyCases] = useState<Case[]>([]);
@@ -49,11 +61,15 @@ export function useCases() {
       setError(null);
 
       try {
-        const token = await getAccessTokenSilently();
-        const data = await api.fetchCases(token, scope);
-        setCases(data.data ?? []);
+        const scopeClient = scope === "me" ? client.me : client.team;
+        const result = await scopeClient.list<Case>("incident", {
+          select: CASE_FIELDS,
+          top: 200,
+          orderBy: "modifiedon:desc",
+        });
+        setCases(result.data ?? []);
       } catch (err) {
-        if (err instanceof Error && err.message === "team_forbidden") {
+        if (err instanceof ApiError && err.status === 403 && scope === "team") {
           setTeamAvailable(false);
           setCases([]);
           return;
@@ -63,7 +79,7 @@ export function useCases() {
         setLoading(false);
       }
     },
-    [getAccessTokenSilently],
+    [client],
   );
 
   const fetchCaseNotes = useCallback(
@@ -72,16 +88,21 @@ export function useCases() {
       setNotesError(null);
 
       try {
-        const token = await getAccessTokenSilently();
-        const data = await api.fetchCaseNotes(token, incidentId, scope);
-        setCaseNotes(data.data ?? []);
+        const scopeClient = scope === "me" ? client.me : client.team;
+        const result = await scopeClient.list<CaseNote>("casenotes", {
+          select: NOTES_FIELDS,
+          filter: `objectid eq ${incidentId}`,
+          orderBy: "createdon:desc",
+          top: 100,
+        });
+        setCaseNotes(result.data ?? []);
       } catch (err) {
         setNotesError(err instanceof Error ? err.message : "Failed to load notes");
       } finally {
         setNotesLoading(false);
       }
     },
-    [getAccessTokenSilently],
+    [client],
   );
 
   const createCaseNote = useCallback(
@@ -90,13 +111,11 @@ export function useCases() {
       setNoteSubmitError(null);
 
       try {
-        const token = await getAccessTokenSilently();
-        await api.createCaseNote(
-          token,
-          incidentId,
-          noteSubject.trim() || null,
-          noteBody.trim() || null,
-        );
+        await client.me.create("casenotes", {
+          subject: noteSubject.trim() || null,
+          notetext: noteBody.trim() || null,
+          objectid_incident: incidentId,
+        });
         setNoteSubject("");
         setNoteBody("");
         setShowNoteForm(false);
@@ -107,7 +126,7 @@ export function useCases() {
         setNoteSubmitting(false);
       }
     },
-    [getAccessTokenSilently, noteSubject, noteBody, activeTab, fetchCaseNotes],
+    [client, noteSubject, noteBody, activeTab, fetchCaseNotes],
   );
 
   // ── Case navigation ───────────────────────────────────────────────

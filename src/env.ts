@@ -16,6 +16,3 @@ export const config = {
   /** Base URL of the dataverse-contact-api deployment, e.g. "https://my-api.vercel.app" */
   apiBaseUrl: requireEnvVar("VITE_API_BASE_URL"),
 };
-
-/** API version path — must match the API server */
-export const API_BASE = "/api/v2";

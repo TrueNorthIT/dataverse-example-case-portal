@@ -27,16 +27,6 @@ export interface CaseNote {
   [key: string]: unknown;
 }
 
-export interface CaseResponse {
-  data: Case[];
-  page: { top: number; skip: number; next: string | null };
-}
-
-export interface NotesResponse {
-  data: CaseNote[];
-  page: { top: number; skip: number; next: string | null };
-}
-
 export type SortField = "ticketnumber" | "title" | "statuscode" | "prioritycode" | "createdon" | "modifiedon";
 export type SortDir = "asc" | "desc";
 export type GroupBy = "none" | "statuscode" | "prioritycode" | "casetypecode";
