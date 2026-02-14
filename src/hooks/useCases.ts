@@ -49,6 +49,13 @@ export function useCases() {
   const [noteSubmitting, setNoteSubmitting] = useState(false);
   const [noteSubmitError, setNoteSubmitError] = useState<string | null>(null);
 
+  // Create case form state
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createTitle, setCreateTitle] = useState("");
+  const [createDescription, setCreateDescription] = useState("");
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createSubmitError, setCreateSubmitError] = useState<string | null>(null);
+
   // ── API wrappers ──────────────────────────────────────────────────
 
   const fetchCases = useCallback(
@@ -150,6 +157,32 @@ export function useCases() {
     setNotesError(null);
     setShowNoteForm(false);
   }, []);
+
+  const createCase = useCallback(
+    async () => {
+      setCreateSubmitting(true);
+      setCreateSubmitError(null);
+
+      try {
+        const result = await client.me.create<Case>("incident", {
+          title: createTitle.trim(),
+          description: createDescription.trim() || null,
+        });
+        setCreateTitle("");
+        setCreateDescription("");
+        setShowCreateForm(false);
+        await fetchCases("me");
+        if (result.data) {
+          openCase(result.data);
+        }
+      } catch (err) {
+        setCreateSubmitError(err instanceof Error ? err.message : "Failed to create case");
+      } finally {
+        setCreateSubmitting(false);
+      }
+    },
+    [client, createTitle, createDescription, fetchCases, openCase],
+  );
 
   // ── Initial load ──────────────────────────────────────────────────
 
@@ -284,5 +317,17 @@ export function useCases() {
     noteSubmitError,
     setNoteSubmitError,
     createCaseNote,
+
+    // Create case form
+    showCreateForm,
+    setShowCreateForm,
+    createTitle,
+    setCreateTitle,
+    createDescription,
+    setCreateDescription,
+    createSubmitting,
+    createSubmitError,
+    setCreateSubmitError,
+    createCase,
   };
 }

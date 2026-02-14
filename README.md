@@ -2,6 +2,14 @@
 
 Example case management portal built with React + Tailwind CSS, showcasing the [dataverse-contact-api](https://github.com/TrueNorthIT/dataverse-contact-api).
 
+## Features
+
+- View your cases (My Cases) and team cases (Team Cases)
+- Search, sort, and group cases by status, priority, or type
+- View case details with notes timeline
+- **Create new cases** — provide a title and description; contact and account are auto-linked by the API
+- Add notes to existing cases
+
 ## Setup
 
 1. **Create an Auth0 SPA Application** for this portal (same tenant as the API, same audience)
