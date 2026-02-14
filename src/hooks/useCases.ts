@@ -139,14 +139,16 @@ export function useCases() {
   // ── Case navigation ───────────────────────────────────────────────
 
   const openCase = useCallback(
-    (c: Case) => {
+    (c: Case, skipNotes?: boolean) => {
       setSelectedCase(c);
       setCaseNotes([]);
       setShowNoteForm(false);
       setNoteSubject("");
       setNoteBody("");
       setNoteSubmitError(null);
-      fetchCaseNotes(c.incidentid, activeTab);
+      if (!skipNotes) {
+        fetchCaseNotes(c.incidentid, activeTab);
+      }
     },
     [activeTab, fetchCaseNotes],
   );
@@ -171,10 +173,11 @@ export function useCases() {
         setCreateTitle("");
         setCreateDescription("");
         setShowCreateForm(false);
-        await fetchCases("me");
         if (result.data) {
-          openCase(result.data);
+          setMyCases((prev) => [result.data!, ...prev]);
+          openCase(result.data, true);
         }
+        fetchCases("me");
       } catch (err) {
         setCreateSubmitError(err instanceof Error ? err.message : "Failed to create case");
       } finally {
