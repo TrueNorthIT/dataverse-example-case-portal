@@ -90,7 +90,7 @@ export function CaseDetail({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5 pt-5 border-t border-tn-border/50">
             {[
               { label: "Case Type", value: selectedCase.casetypecode_label ?? "—" },
-              { label: "Status", value: selectedCase.statecode_label ?? (selectedCase.statecode === 0 ? "Active" : selectedCase.statecode === 1 ? "Resolved" : "Cancelled") },
+              { label: "Status Reason", value: selectedCase.statuscode_label ?? `Status ${selectedCase.statuscode}` },
               { label: "Created", value: formatDateFull(selectedCase.createdon) },
               { label: "Last Modified", value: formatDateFull(selectedCase.modifiedon) },
             ].map((item) => (

@@ -6,6 +6,7 @@ import { HeroSection } from "./components/HeroSection";
 import { Toolbar } from "./components/Toolbar";
 import { CaseTable } from "./components/CaseTable";
 import { CaseDetail } from "./components/CaseDetail";
+import { CreateCaseForm } from "./components/CreateCaseForm";
 
 export function App() {
   const {
@@ -65,6 +66,7 @@ export function App() {
             onRefresh={() => cases.fetchCases(cases.activeTab)}
             filteredCount={cases.filtered.length}
             totalCount={cases.activeCases.length}
+            onNewCase={() => { cases.setShowCreateForm(true); cases.setCreateSubmitError(null); }}
           />
         )}
 
@@ -114,6 +116,24 @@ export function App() {
           />
         )}
       </div>
+
+      {cases.showCreateForm && (
+        <CreateCaseForm
+          title={cases.createTitle}
+          onTitleChange={cases.setCreateTitle}
+          description={cases.createDescription}
+          onDescriptionChange={cases.setCreateDescription}
+          submitting={cases.createSubmitting}
+          submitError={cases.createSubmitError}
+          onSubmit={cases.createCase}
+          onCancel={() => {
+            cases.setShowCreateForm(false);
+            cases.setCreateTitle("");
+            cases.setCreateDescription("");
+            cases.setCreateSubmitError(null);
+          }}
+        />
+      )}
     </div>
   );
 }

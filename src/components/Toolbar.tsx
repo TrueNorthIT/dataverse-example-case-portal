@@ -16,6 +16,7 @@ interface ToolbarProps {
   onRefresh: () => void;
   filteredCount: number;
   totalCount: number;
+  onNewCase: () => void;
 }
 
 export function Toolbar({
@@ -34,6 +35,7 @@ export function Toolbar({
   onRefresh,
   filteredCount,
   totalCount,
+  onNewCase,
 }: ToolbarProps) {
   return (
     <div className="bg-white rounded-xl border border-tn-border shadow-sm mb-4">
@@ -59,6 +61,17 @@ export function Toolbar({
             </button>
           )}
         </div>
+
+        {/* New Case — only on My Cases tab */}
+        {activeTab === "me" && (
+          <button
+            className="px-3 py-2 text-xs rounded-lg border border-tn-sky bg-tn-sky/10
+              text-tn-navy font-semibold hover:bg-tn-sky/20 transition-colors cursor-pointer"
+            onClick={onNewCase}
+          >
+            + New Case
+          </button>
+        )}
 
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-md">
