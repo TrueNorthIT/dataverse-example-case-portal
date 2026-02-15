@@ -137,7 +137,7 @@ export function useCases() {
       const scopeClient = selectedCaseScope === "me" ? client.me : client.team;
       const result = await scopeClient.list<CaseNote>("casenotes", {
         select: NOTES_FIELDS,
-        filter: `objectid eq ${selectedCase!.incidentid}`,
+        filter: `incidentid eq ${selectedCase!.incidentid}`,
         orderBy: "createdon:desc",
         top: 100,
       });
@@ -153,7 +153,7 @@ export function useCases() {
       await client.me.create("casenotes", {
         subject: data.subject || null,
         notetext: data.body || null,
-        objectid_incident: data.incidentId,
+        incidentid: data.incidentId,
       });
       return data.incidentId;
     },
