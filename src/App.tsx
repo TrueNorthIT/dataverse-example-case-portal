@@ -37,6 +37,16 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-tn-bg font-sans text-tn-navy">
+      {/* Subtle background-refresh indicator */}
+      {cases.isRefreshing && (
+        <div className="fixed top-0 left-0 right-0 h-0.5 z-50 overflow-hidden bg-tn-sky/20">
+          <div
+            className="h-full w-1/3 bg-tn-sky rounded-full"
+            style={{ animation: "refresh-slide 1.2s ease-in-out infinite" }}
+          />
+        </div>
+      )}
+
       <Header
         user={user}
         onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
@@ -63,6 +73,7 @@ export function App() {
             groupBy={cases.groupBy}
             onGroupByChange={cases.setGroupBy}
             activeLoading={cases.activeLoading}
+            activeRefreshing={cases.activeRefreshing}
             onRefresh={() => cases.fetchCases(cases.activeTab)}
             filteredCount={cases.filtered.length}
             totalCount={cases.activeCases.length}
@@ -77,6 +88,7 @@ export function App() {
             onClose={cases.closeCase}
             caseNotes={cases.caseNotes}
             notesLoading={cases.notesLoading}
+            notesRefreshing={cases.notesRefreshing}
             notesError={cases.notesError}
             onRefreshNotes={() => cases.fetchCaseNotes(cases.selectedCase!.incidentid, cases.activeTab)}
             showNoteForm={cases.showNoteForm}
