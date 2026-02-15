@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@truenorth-it/dataverse-client";
 import type { Case, CaseNote, Tab, SortField, SortDir, GroupBy } from "../types/case";
 import { useApiClient } from "../services/caseApi";
@@ -15,17 +16,25 @@ const NOTES_FIELDS = [
   "filename", "filesize", "createdon", "modifiedon",
 ];
 
+type AggRow = { statecode: number; prioritycode: number; count: number };
+type AggStats = { total: number; active: number; resolved: number; high: number };
+
+function computeAggStats(rows: AggRow[]): AggStats {
+  let total = 0, active = 0, resolved = 0, high = 0;
+  for (const r of rows) {
+    total += r.count;
+    if (r.statecode === 0) active += r.count;
+    if (r.statecode === 1) resolved += r.count;
+    if (r.prioritycode === 1) high += r.count;
+  }
+  return { total, active, resolved, high };
+}
+
 export function useCases() {
   const { isAuthenticated } = useAuth0();
   const client = useApiClient();
+  const queryClient = useQueryClient();
 
-  // Data state
-  const [myCases, setMyCases] = useState<Case[]>([]);
-  const [teamCases, setTeamCases] = useState<Case[]>([]);
-  const [myLoading, setMyLoading] = useState(false);
-  const [teamLoading, setTeamLoading] = useState(false);
-  const [myError, setMyError] = useState<string | null>(null);
-  const [teamError, setTeamError] = useState<string | null>(null);
   const [teamAvailable, setTeamAvailable] = useState(true);
 
   // UI state
@@ -38,207 +47,247 @@ export function useCases() {
 
   // Case detail state
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
-  const [caseNotes, setCaseNotes] = useState<CaseNote[]>([]);
-  const [notesLoading, setNotesLoading] = useState(false);
-  const [notesError, setNotesError] = useState<string | null>(null);
+  const [selectedCaseScope, setSelectedCaseScope] = useState<Tab>("me");
 
   // Note form state
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteSubject, setNoteSubject] = useState("");
   const [noteBody, setNoteBody] = useState("");
-  const [noteSubmitting, setNoteSubmitting] = useState(false);
-  const [noteSubmitError, setNoteSubmitError] = useState<string | null>(null);
-
-  // Aggregate stats (server-side counts)
-  const [myAggStats, setMyAggStats] = useState<{ total: number; active: number; resolved: number; high: number } | null>(null);
-  const [teamAggStats, setTeamAggStats] = useState<{ total: number; active: number; resolved: number; high: number } | null>(null);
 
   // Create case form state
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
   const [createDescription, setCreateDescription] = useState("");
-  const [createSubmitting, setCreateSubmitting] = useState(false);
-  const [createSubmitError, setCreateSubmitError] = useState<string | null>(null);
 
-  // ── API wrappers ──────────────────────────────────────────────────
+  // ── TanStack Query: Cases ────────────────────────────────────────
 
-  const fetchCases = useCallback(
-    async (scope: "me" | "team") => {
-      const setLoading = scope === "me" ? setMyLoading : setTeamLoading;
-      const setError = scope === "me" ? setMyError : setTeamError;
-      const setCases = scope === "me" ? setMyCases : setTeamCases;
+  const myCasesQuery = useQuery({
+    queryKey: ["cases", "me"] as const,
+    queryFn: async () => {
+      const result = await client.me.list<Case>("case", {
+        select: CASE_FIELDS,
+        top: 200,
+        orderBy: "modifiedon:desc",
+      });
+      return result.data ?? [];
+    },
+    enabled: isAuthenticated,
+  });
 
-      setLoading(true);
-      setError(null);
-
+  const teamCasesQuery = useQuery({
+    queryKey: ["cases", "team"] as const,
+    queryFn: async () => {
       try {
-        const scopeClient = scope === "me" ? client.me : client.team;
-        const result = await scopeClient.list<Case>("case", {
+        const result = await client.team.list<Case>("case", {
           select: CASE_FIELDS,
           top: 200,
           orderBy: "modifiedon:desc",
         });
-        setCases(result.data ?? []);
+        return result.data ?? [];
       } catch (err) {
-        if (err instanceof ApiError && err.status === 403 && scope === "team") {
+        if (err instanceof ApiError && err.status === 403) {
           setTeamAvailable(false);
-          setCases([]);
-          return;
+          return [];
         }
-        setError(err instanceof Error ? err.message : "Failed to load cases");
-      } finally {
-        setLoading(false);
+        throw err;
       }
     },
-    [client],
-  );
+    enabled: isAuthenticated,
+  });
 
-  const fetchAggregateStats = useCallback(
-    async (scope: "me" | "team") => {
-      const setAgg = scope === "me" ? setMyAggStats : setTeamAggStats;
+  // ── TanStack Query: Aggregate Stats ──────────────────────────────
+
+  const myAggQuery = useQuery({
+    queryKey: ["aggStats", "me"] as const,
+    queryFn: async () => {
       try {
-        const scopeClient = scope === "me" ? client.me : client.team;
-        const result = await scopeClient.aggregate<{
-          statecode: number;
-          prioritycode: number;
-          count: number;
-        }>("case", {
+        const result = await client.me.aggregate<AggRow>("case", {
           aggregate: "count",
           groupBy: ["statecode", "prioritycode"],
         });
-        const rows = result.data ?? [];
-        let total = 0;
-        let active = 0;
-        let resolved = 0;
-        let high = 0;
-        for (const r of rows) {
-          total += r.count;
-          if (r.statecode === 0) active += r.count;
-          if (r.statecode === 1) resolved += r.count;
-          if (r.prioritycode === 1) high += r.count;
-        }
-        setAgg({ total, active, resolved, high });
+        return computeAggStats(result.data ?? []);
       } catch {
-        // Aggregate endpoint may not be available — fall back to client-side stats
-        setAgg(null);
+        return null;
       }
     },
-    [client],
-  );
+    enabled: isAuthenticated,
+  });
 
-  const fetchCaseNotes = useCallback(
-    async (incidentId: string, scope: "me" | "team") => {
-      setNotesLoading(true);
-      setNotesError(null);
-
+  const teamAggQuery = useQuery({
+    queryKey: ["aggStats", "team"] as const,
+    queryFn: async () => {
       try {
-        const scopeClient = scope === "me" ? client.me : client.team;
-        const result = await scopeClient.list<CaseNote>("casenotes", {
-          select: NOTES_FIELDS,
-          filter: `objectid eq ${incidentId}`,
-          orderBy: "createdon:desc",
-          top: 100,
+        const result = await client.team.aggregate<AggRow>("case", {
+          aggregate: "count",
+          groupBy: ["statecode", "prioritycode"],
         });
-        setCaseNotes(result.data ?? []);
-      } catch (err) {
-        setNotesError(err instanceof Error ? err.message : "Failed to load notes");
-      } finally {
-        setNotesLoading(false);
+        return computeAggStats(result.data ?? []);
+      } catch {
+        return null;
       }
     },
-    [client],
-  );
+    enabled: isAuthenticated,
+  });
 
-  const createCaseNote = useCallback(
-    async (incidentId: string) => {
-      setNoteSubmitting(true);
-      setNoteSubmitError(null);
+  // ── TanStack Query: Case Notes ───────────────────────────────────
 
-      try {
-        await client.me.create("casenotes", {
-          subject: noteSubject.trim() || null,
-          notetext: noteBody.trim() || null,
-          objectid_incident: incidentId,
-        });
-        setNoteSubject("");
-        setNoteBody("");
-        setShowNoteForm(false);
-        fetchCaseNotes(incidentId, activeTab);
-      } catch (err) {
-        setNoteSubmitError(err instanceof Error ? err.message : "Failed to create note");
-      } finally {
-        setNoteSubmitting(false);
-      }
+  const notesQuery = useQuery({
+    queryKey: ["caseNotes", selectedCase?.incidentid, selectedCaseScope] as const,
+    queryFn: async () => {
+      const scopeClient = selectedCaseScope === "me" ? client.me : client.team;
+      const result = await scopeClient.list<CaseNote>("casenotes", {
+        select: NOTES_FIELDS,
+        filter: `objectid eq ${selectedCase!.incidentid}`,
+        orderBy: "createdon:desc",
+        top: 100,
+      });
+      return result.data ?? [];
     },
-    [client, noteSubject, noteBody, activeTab, fetchCaseNotes],
-  );
+    enabled: isAuthenticated && !!selectedCase,
+  });
 
-  // ── Case navigation ───────────────────────────────────────────────
+  // ── TanStack Query: Mutations ────────────────────────────────────
 
-  const openCase = useCallback(
-    (c: Case, skipNotes?: boolean) => {
-      setSelectedCase(c);
-      setCaseNotes([]);
-      setShowNoteForm(false);
+  const createNoteMutation = useMutation({
+    mutationFn: async (data: { incidentId: string; subject: string; body: string }) => {
+      await client.me.create("casenotes", {
+        subject: data.subject || null,
+        notetext: data.body || null,
+        objectid_incident: data.incidentId,
+      });
+      return data.incidentId;
+    },
+    onSuccess: (incidentId) => {
       setNoteSubject("");
       setNoteBody("");
-      setNoteSubmitError(null);
-      if (!skipNotes) {
-        fetchCaseNotes(c.incidentid, activeTab);
-      }
+      setShowNoteForm(false);
+      queryClient.invalidateQueries({ queryKey: ["caseNotes", incidentId] });
     },
-    [activeTab, fetchCaseNotes],
-  );
+  });
 
-  const closeCase = useCallback(() => {
-    setSelectedCase(null);
-    setCaseNotes([]);
-    setNotesError(null);
-    setShowNoteForm(false);
-  }, []);
-
-  const createCase = useCallback(
-    async () => {
-      setCreateSubmitting(true);
-      setCreateSubmitError(null);
-
-      try {
-        const result = await client.me.create<Case>("case", {
-          title: createTitle.trim(),
-          description: createDescription.trim() || null,
-        });
-        setCreateTitle("");
-        setCreateDescription("");
-        setShowCreateForm(false);
-        if (result.data) {
-          setMyCases((prev) => [result.data!, ...prev]);
-          openCase(result.data, true);
-        }
-        fetchCases("me");
-      } catch (err) {
-        setCreateSubmitError(err instanceof Error ? err.message : "Failed to create case");
-      } finally {
-        setCreateSubmitting(false);
-      }
+  const createCaseMutation = useMutation({
+    mutationFn: async (data: { title: string; description: string }) => {
+      return client.me.create<Case>("case", {
+        title: data.title,
+        description: data.description || null,
+      });
     },
-    [client, createTitle, createDescription, fetchCases, openCase],
-  );
+    onSuccess: (result) => {
+      setCreateTitle("");
+      setCreateDescription("");
+      setShowCreateForm(false);
+      if (result.data) {
+        queryClient.setQueryData<Case[]>(["cases", "me"], (old) =>
+          old ? [result.data!, ...old] : [result.data!],
+        );
+        setSelectedCase(result.data);
+        setSelectedCaseScope("me");
+        setShowNoteForm(false);
+        setNoteSubject("");
+        setNoteBody("");
+      }
+      queryClient.invalidateQueries({ queryKey: ["cases", "me"] });
+      queryClient.invalidateQueries({ queryKey: ["aggStats", "me"] });
+    },
+  });
 
-  // ── Initial load ──────────────────────────────────────────────────
+  // ── Derived data from queries ────────────────────────────────────
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    fetchCases("me");
-    fetchCases("team");
-    fetchAggregateStats("me");
-    fetchAggregateStats("team");
-  }, [isAuthenticated, fetchCases, fetchAggregateStats]);
-
-  // ── Derived data ──────────────────────────────────────────────────
+  const myCases = myCasesQuery.data ?? [];
+  const teamCases = teamCasesQuery.data ?? [];
+  const myLoading = myCasesQuery.isLoading;
+  const teamLoading = teamCasesQuery.isLoading;
+  const myError = myCasesQuery.error
+    ? (myCasesQuery.error instanceof Error ? myCasesQuery.error.message : "Failed to load cases")
+    : null;
+  const teamError = teamCasesQuery.error
+    ? (teamCasesQuery.error instanceof Error ? teamCasesQuery.error.message : "Failed to load cases")
+    : null;
 
   const activeCases = activeTab === "me" ? myCases : teamCases;
   const activeLoading = activeTab === "me" ? myLoading : teamLoading;
   const activeError = activeTab === "me" ? myError : teamError;
+
+  const caseNotes = notesQuery.data ?? [];
+  const notesLoading = notesQuery.isLoading;
+  const notesError = notesQuery.error
+    ? (notesQuery.error instanceof Error ? notesQuery.error.message : "Failed to load notes")
+    : null;
+
+  const noteSubmitting = createNoteMutation.isPending;
+  const noteSubmitError = createNoteMutation.error
+    ? (createNoteMutation.error instanceof Error ? createNoteMutation.error.message : "Failed to create note")
+    : null;
+
+  const createSubmitting = createCaseMutation.isPending;
+  const createSubmitError = createCaseMutation.error
+    ? (createCaseMutation.error instanceof Error ? createCaseMutation.error.message : "Failed to create case")
+    : null;
+
+  // ── Handlers ─────────────────────────────────────────────────────
+
+  const fetchCases = useCallback(
+    (scope: "me" | "team") => {
+      queryClient.invalidateQueries({ queryKey: ["cases", scope] });
+      queryClient.invalidateQueries({ queryKey: ["aggStats", scope] });
+    },
+    [queryClient],
+  );
+
+  const fetchCaseNotes = useCallback(
+    (incidentId: string, scope: "me" | "team") => {
+      queryClient.invalidateQueries({ queryKey: ["caseNotes", incidentId, scope] });
+    },
+    [queryClient],
+  );
+
+  const openCase = useCallback(
+    (c: Case, _skipNotes?: boolean) => {
+      setSelectedCase(c);
+      setSelectedCaseScope(activeTab);
+      setShowNoteForm(false);
+      setNoteSubject("");
+      setNoteBody("");
+      createNoteMutation.reset();
+    },
+    [activeTab, createNoteMutation],
+  );
+
+  const closeCase = useCallback(() => {
+    setSelectedCase(null);
+    setShowNoteForm(false);
+    createNoteMutation.reset();
+  }, [createNoteMutation]);
+
+  const createCaseNote = useCallback(
+    (incidentId: string) => {
+      createNoteMutation.mutate({
+        incidentId,
+        subject: noteSubject.trim(),
+        body: noteBody.trim(),
+      });
+    },
+    [createNoteMutation, noteSubject, noteBody],
+  );
+
+  const createCase = useCallback(() => {
+    createCaseMutation.mutate({
+      title: createTitle.trim(),
+      description: createDescription.trim(),
+    });
+  }, [createCaseMutation, createTitle, createDescription]);
+
+  const setNoteSubmitError = useCallback(
+    (_: string | null) => { if (_ === null) createNoteMutation.reset(); },
+    [createNoteMutation],
+  );
+
+  const setCreateSubmitError = useCallback(
+    (_: string | null) => { if (_ === null) createCaseMutation.reset(); },
+    [createCaseMutation],
+  );
+
+  // ── Derived UI data ──────────────────────────────────────────────
 
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return activeCases;
@@ -277,18 +326,16 @@ export function useCases() {
   }, [groupBy, activeTab]);
 
   const stats = useMemo(() => {
-    // Prefer server-side aggregate stats when available (accurate for any dataset size)
-    const agg = activeTab === "me" ? myAggStats : teamAggStats;
+    const agg = activeTab === "me" ? (myAggQuery.data ?? null) : (teamAggQuery.data ?? null);
     if (agg) return agg;
 
-    // Fall back to client-side computation from loaded cases
     const active = activeCases.filter((c) => c.statecode === 0).length;
     const resolved = activeCases.filter((c) => c.statecode === 1).length;
     const high = activeCases.filter((c) => c.prioritycode === 1).length;
     return { total: activeCases.length, active, resolved, high };
-  }, [activeCases, activeTab, myAggStats, teamAggStats]);
+  }, [activeCases, activeTab, myAggQuery.data, teamAggQuery.data]);
 
-  // ── Sort handler ──────────────────────────────────────────────────
+  // ── Sort handler ─────────────────────────────────────────────────
 
   const handleSort = useCallback(
     (field: SortField) => {
