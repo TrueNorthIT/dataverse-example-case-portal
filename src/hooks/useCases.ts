@@ -49,6 +49,10 @@ export function useCases() {
   const [noteSubmitting, setNoteSubmitting] = useState(false);
   const [noteSubmitError, setNoteSubmitError] = useState<string | null>(null);
 
+  // Aggregate stats (server-side counts)
+  const [myAggStats, setMyAggStats] = useState<{ total: number; active: number; resolved: number; high: number } | null>(null);
+  const [teamAggStats, setTeamAggStats] = useState<{ total: number; active: number; resolved: number; high: number } | null>(null);
+
   // Create case form state
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
@@ -84,6 +88,39 @@ export function useCases() {
         setError(err instanceof Error ? err.message : "Failed to load cases");
       } finally {
         setLoading(false);
+      }
+    },
+    [client],
+  );
+
+  const fetchAggregateStats = useCallback(
+    async (scope: "me" | "team") => {
+      const setAgg = scope === "me" ? setMyAggStats : setTeamAggStats;
+      try {
+        const scopeClient = scope === "me" ? client.me : client.team;
+        const result = await scopeClient.aggregate<{
+          statecode: number;
+          prioritycode: number;
+          count: number;
+        }>("case", {
+          aggregate: "count",
+          groupBy: ["statecode", "prioritycode"],
+        });
+        const rows = result.data ?? [];
+        let total = 0;
+        let active = 0;
+        let resolved = 0;
+        let high = 0;
+        for (const r of rows) {
+          total += r.count;
+          if (r.statecode === 0) active += r.count;
+          if (r.statecode === 1) resolved += r.count;
+          if (r.prioritycode === 1) high += r.count;
+        }
+        setAgg({ total, active, resolved, high });
+      } catch {
+        // Aggregate endpoint may not be available — fall back to client-side stats
+        setAgg(null);
       }
     },
     [client],
@@ -193,7 +230,9 @@ export function useCases() {
     if (!isAuthenticated) return;
     fetchCases("me");
     fetchCases("team");
-  }, [isAuthenticated, fetchCases]);
+    fetchAggregateStats("me");
+    fetchAggregateStats("team");
+  }, [isAuthenticated, fetchCases, fetchAggregateStats]);
 
   // ── Derived data ──────────────────────────────────────────────────
 
@@ -238,11 +277,16 @@ export function useCases() {
   }, [groupBy, activeTab]);
 
   const stats = useMemo(() => {
+    // Prefer server-side aggregate stats when available (accurate for any dataset size)
+    const agg = activeTab === "me" ? myAggStats : teamAggStats;
+    if (agg) return agg;
+
+    // Fall back to client-side computation from loaded cases
     const active = activeCases.filter((c) => c.statecode === 0).length;
     const resolved = activeCases.filter((c) => c.statecode === 1).length;
     const high = activeCases.filter((c) => c.prioritycode === 1).length;
     return { total: activeCases.length, active, resolved, high };
-  }, [activeCases]);
+  }, [activeCases, activeTab, myAggStats, teamAggStats]);
 
   // ── Sort handler ──────────────────────────────────────────────────
 
