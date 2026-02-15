@@ -13,6 +13,7 @@ interface ToolbarProps {
   groupBy: GroupBy;
   onGroupByChange: (groupBy: GroupBy) => void;
   activeLoading: boolean;
+  activeRefreshing: boolean;
   onRefresh: () => void;
   filteredCount: number;
   totalCount: number;
@@ -32,6 +33,7 @@ export function Toolbar({
   groupBy,
   onGroupByChange,
   activeLoading,
+  activeRefreshing,
   onRefresh,
   filteredCount,
   totalCount,
@@ -123,10 +125,17 @@ export function Toolbar({
         <button
           className="px-3 py-2 text-xs rounded-lg border border-tn-border bg-white
             text-tn-slate hover:bg-tn-bg transition-colors cursor-pointer
-            disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
           disabled={activeLoading}
           onClick={onRefresh}
         >
+          <svg
+            className={`w-3.5 h-3.5 ${activeRefreshing ? "text-tn-sky" : ""}`}
+            style={activeRefreshing ? { animation: "spin 1s linear infinite" } : undefined}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
           {activeLoading ? "Loading..." : "Refresh"}
         </button>
       </div>

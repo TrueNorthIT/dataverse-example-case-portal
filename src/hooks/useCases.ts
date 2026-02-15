@@ -208,8 +208,21 @@ export function useCases() {
   const activeLoading = activeTab === "me" ? myLoading : teamLoading;
   const activeError = activeTab === "me" ? myError : teamError;
 
+  // Background refresh states (has cached data but refetching)
+  const activeRefreshing = activeTab === "me"
+    ? (myCasesQuery.isFetching && !myCasesQuery.isLoading)
+    : (teamCasesQuery.isFetching && !teamCasesQuery.isLoading);
+
+  const isRefreshing =
+    (myCasesQuery.isFetching && !myCasesQuery.isLoading) ||
+    (teamCasesQuery.isFetching && !teamCasesQuery.isLoading) ||
+    (myAggQuery.isFetching && !myAggQuery.isLoading) ||
+    (teamAggQuery.isFetching && !teamAggQuery.isLoading) ||
+    (notesQuery.isFetching && !notesQuery.isLoading);
+
   const caseNotes = notesQuery.data ?? [];
   const notesLoading = notesQuery.isLoading;
+  const notesRefreshing = notesQuery.isFetching && !notesQuery.isLoading;
   const notesError = notesQuery.error
     ? (notesQuery.error instanceof Error ? notesQuery.error.message : "Failed to load notes")
     : null;
@@ -369,7 +382,9 @@ export function useCases() {
     teamLoading,
     activeCases,
     activeLoading,
+    activeRefreshing,
     activeError,
+    isRefreshing,
     teamAvailable,
 
     // UI state
@@ -397,6 +412,7 @@ export function useCases() {
     closeCase,
     caseNotes,
     notesLoading,
+    notesRefreshing,
     notesError,
     fetchCaseNotes,
 
