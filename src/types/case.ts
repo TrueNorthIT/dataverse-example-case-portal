@@ -27,6 +27,29 @@ export interface CaseNote {
   [key: string]: unknown;
 }
 
+export interface CaseActivity {
+  activityid: string;
+  subject: string | null;
+  description: string | null;
+  activitytypecode: string;
+  activitytypecode_label?: string;
+  prioritycode: number;
+  prioritycode_label?: string;
+  statecode: number;
+  statecode_label?: string;
+  statuscode: number;
+  statuscode_label?: string;
+  scheduledstart: string | null;
+  scheduledend: string | null;
+  actualstart: string | null;
+  actualend: string | null;
+  createdon: string;
+  modifiedon: string;
+  [key: string]: unknown;
+}
+
+export type ActivityTypeFilter = "all" | "email" | "phonecall" | "task" | "appointment";
+
 export type SortField = "ticketnumber" | "title" | "statuscode" | "prioritycode" | "createdon" | "modifiedon";
 export type SortDir = "asc" | "desc";
 export type GroupBy = "none" | "statuscode" | "prioritycode" | "casetypecode";

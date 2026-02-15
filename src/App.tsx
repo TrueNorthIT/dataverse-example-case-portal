@@ -106,6 +106,15 @@ export function App() {
               cases.setNoteBody("");
               cases.setNoteSubmitError(null);
             }}
+            caseActivities={cases.caseActivities}
+            activitiesLoading={cases.activitiesLoading}
+            activitiesRefreshing={cases.activitiesRefreshing}
+            activitiesError={cases.activitiesError}
+            activityTypeFilter={cases.activityTypeFilter}
+            onActivityTypeFilterChange={cases.setActivityTypeFilter}
+            selectedActivity={cases.selectedActivity}
+            onSelectActivity={cases.setSelectedActivity}
+            onRefreshActivities={() => cases.fetchCaseActivities(cases.selectedCase!.incidentid, cases.activeTab)}
           />
         ) : (
           <CaseTable

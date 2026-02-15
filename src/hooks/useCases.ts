@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@truenorth-it/dataverse-client";
-import type { Case, CaseNote, Tab, SortField, SortDir, GroupBy } from "../types/case";
+import type { Case, CaseNote, CaseActivity, ActivityTypeFilter, Tab, SortField, SortDir, GroupBy } from "../types/case";
 import { useApiClient } from "../services/caseApi";
 import { compareCases } from "../utils/style";
 
@@ -15,6 +15,20 @@ const NOTES_FIELDS = [
   "annotationid", "subject", "notetext", "isdocument",
   "filename", "filesize", "createdon", "modifiedon",
 ];
+
+const ACTIVITY_FIELDS = [
+  "activityid", "subject", "description", "activitytypecode",
+  "prioritycode", "statecode", "statuscode",
+  "scheduledstart", "scheduledend", "actualstart", "actualend",
+  "createdon", "modifiedon",
+];
+
+const ACTIVITY_TYPE_ROUTES: Record<Exclude<ActivityTypeFilter, "all">, string> = {
+  email: "caseemails",
+  phonecall: "casephonecalls",
+  task: "casetasks",
+  appointment: "caseappointments",
+};
 
 type AggRow = { statecode: number; prioritycode: number; count: number };
 type AggStats = { total: number; active: number; resolved: number; high: number };
@@ -48,6 +62,10 @@ export function useCases() {
   // Case detail state
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [selectedCaseScope, setSelectedCaseScope] = useState<Tab>("me");
+
+  // Activity state
+  const [activityTypeFilter, setActivityTypeFilter] = useState<ActivityTypeFilter>("all");
+  const [selectedActivity, setSelectedActivity] = useState<CaseActivity | null>(null);
 
   // Note form state
   const [showNoteForm, setShowNoteForm] = useState(false);
@@ -146,6 +164,26 @@ export function useCases() {
     enabled: isAuthenticated && !!selectedCase,
   });
 
+  // ── TanStack Query: Case Activities ─────────────────────────────
+
+  const activitiesQuery = useQuery({
+    queryKey: ["caseActivities", selectedCase?.incidentid, selectedCaseScope, activityTypeFilter] as const,
+    queryFn: async () => {
+      const scopeClient = selectedCaseScope === "me" ? client.me : client.team;
+      const route = activityTypeFilter === "all"
+        ? "caseactivities"
+        : ACTIVITY_TYPE_ROUTES[activityTypeFilter];
+      const result = await scopeClient.list<CaseActivity>(route, {
+        select: ACTIVITY_FIELDS,
+        filter: `incidentid eq ${selectedCase!.incidentid}`,
+        orderBy: "createdon:desc",
+        top: 100,
+      });
+      return result.data ?? [];
+    },
+    enabled: isAuthenticated && !!selectedCase,
+  });
+
   // ── TanStack Query: Mutations ────────────────────────────────────
 
   const createNoteMutation = useMutation({
@@ -218,13 +256,21 @@ export function useCases() {
     (teamCasesQuery.isFetching && !teamCasesQuery.isLoading) ||
     (myAggQuery.isFetching && !myAggQuery.isLoading) ||
     (teamAggQuery.isFetching && !teamAggQuery.isLoading) ||
-    (notesQuery.isFetching && !notesQuery.isLoading);
+    (notesQuery.isFetching && !notesQuery.isLoading) ||
+    (activitiesQuery.isFetching && !activitiesQuery.isLoading);
 
   const caseNotes = notesQuery.data ?? [];
   const notesLoading = notesQuery.isLoading;
   const notesRefreshing = notesQuery.isFetching && !notesQuery.isLoading;
   const notesError = notesQuery.error
     ? (notesQuery.error instanceof Error ? notesQuery.error.message : "Failed to load notes")
+    : null;
+
+  const caseActivities = activitiesQuery.data ?? [];
+  const activitiesLoading = activitiesQuery.isLoading;
+  const activitiesRefreshing = activitiesQuery.isFetching && !activitiesQuery.isLoading;
+  const activitiesError = activitiesQuery.error
+    ? (activitiesQuery.error instanceof Error ? activitiesQuery.error.message : "Failed to load activities")
     : null;
 
   const noteSubmitting = createNoteMutation.isPending;
@@ -254,6 +300,13 @@ export function useCases() {
     [queryClient],
   );
 
+  const fetchCaseActivities = useCallback(
+    (incidentId: string, scope: "me" | "team") => {
+      queryClient.invalidateQueries({ queryKey: ["caseActivities", incidentId, scope] });
+    },
+    [queryClient],
+  );
+
   const openCase = useCallback(
     (c: Case, _skipNotes?: boolean) => {
       setSelectedCase(c);
@@ -261,6 +314,8 @@ export function useCases() {
       setShowNoteForm(false);
       setNoteSubject("");
       setNoteBody("");
+      setActivityTypeFilter("all");
+      setSelectedActivity(null);
       createNoteMutation.reset();
     },
     [activeTab, createNoteMutation],
@@ -269,6 +324,8 @@ export function useCases() {
   const closeCase = useCallback(() => {
     setSelectedCase(null);
     setShowNoteForm(false);
+    setSelectedActivity(null);
+    setActivityTypeFilter("all");
     createNoteMutation.reset();
   }, [createNoteMutation]);
 
@@ -415,6 +472,17 @@ export function useCases() {
     notesRefreshing,
     notesError,
     fetchCaseNotes,
+
+    // Activities
+    caseActivities,
+    activitiesLoading,
+    activitiesRefreshing,
+    activitiesError,
+    activityTypeFilter,
+    setActivityTypeFilter,
+    selectedActivity,
+    setSelectedActivity,
+    fetchCaseActivities,
 
     // Note form
     showNoteForm,
