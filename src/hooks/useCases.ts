@@ -69,7 +69,7 @@ export function useCases() {
 
       try {
         const scopeClient = scope === "me" ? client.me : client.team;
-        const result = await scopeClient.list<Case>("incident", {
+        const result = await scopeClient.list<Case>("case", {
           select: CASE_FIELDS,
           top: 200,
           orderBy: "modifiedon:desc",
@@ -166,7 +166,7 @@ export function useCases() {
       setCreateSubmitError(null);
 
       try {
-        const result = await client.me.create<Case>("incident", {
+        const result = await client.me.create<Case>("case", {
           title: createTitle.trim(),
           description: createDescription.trim() || null,
         });
