@@ -9,6 +9,7 @@ Example case management portal built with React + Tailwind CSS, showcasing the [
 - View case details with notes timeline
 - **Create new cases** — provide a title and description; contact and account are auto-linked by the API
 - Add notes to existing cases
+- **Real-time updates** — when data changes via another user or MCP, the UI refreshes automatically via Azure SignalR
 
 ## Setup
 
@@ -25,6 +26,12 @@ Example case management portal built with React + Tailwind CSS, showcasing the [
 | `VITE_AUTH0_CLIENT_ID` | SPA Application client ID (create a new one for this portal) |
 | `VITE_AUTH0_AUDIENCE` | Same API audience as the dataverse-contact-api |
 | `VITE_API_BASE_URL` | Root URL of the deployed API (e.g. `https://your-api.vercel.app`) |
+
+## Real-time notifications
+
+The portal automatically connects to Azure SignalR (via the SDK's `useRealtime` hook) when the API has `SIGNALR_CONNECTION_STRING` configured. When any user creates or updates a record — via the portal, REST API, or MCP — all other connected users see the change immediately without refreshing.
+
+No portal-side configuration needed. The `@microsoft/signalr` package is already included as a dependency.
 
 ## Deployment
 
