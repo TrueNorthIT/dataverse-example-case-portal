@@ -2,10 +2,11 @@ import type { User } from "@auth0/auth0-react";
 
 interface HeaderProps {
   user?: User;
+  realtimeConnected?: boolean;
   onLogout: () => void;
 }
 
-export function Header({ user, onLogout }: HeaderProps) {
+export function Header({ user, realtimeConnected, onLogout }: HeaderProps) {
   return (
     <header className="bg-tn-navy text-white shadow-md">
       <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -14,6 +15,15 @@ export function Header({ user, onLogout }: HeaderProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
           <span className="font-bold text-base">Case Portal</span>
+          {realtimeConnected != null && (
+            <span
+              className="flex items-center gap-1 text-[0.6rem] text-tn-sky/60"
+              title={realtimeConnected ? "Real-time updates active" : "Real-time updates disconnected"}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${realtimeConnected ? "bg-emerald-400" : "bg-amber-400 animate-pulse"}`} />
+              <span className="hidden sm:inline">{realtimeConnected ? "Live" : "Connecting"}</span>
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-4">
           <span className="text-xs text-tn-sky/80">{user?.email}</span>
