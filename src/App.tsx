@@ -26,7 +26,7 @@ export function App() {
   const negotiate = useCallback(() => client.negotiate(), [client]);
 
   // Real-time: auto-invalidates React Query caches when data changes on the server
-  useRealtime({
+  const realtime = useRealtime({
     negotiate,
     queryClient,
     enabled: isAuthenticated,
@@ -64,6 +64,7 @@ export function App() {
 
       <Header
         user={user}
+        realtimeConnected={realtime.connected}
         onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
       />
 
