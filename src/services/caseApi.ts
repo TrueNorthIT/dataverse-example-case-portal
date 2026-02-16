@@ -12,6 +12,7 @@ export function useApiClient() {
       createClient({
         baseUrl: config.apiBaseUrl,
         getToken: () => getAccessTokenSilently(),
+        scope: config.apiScope,
       }),
     [getAccessTokenSilently],
   );

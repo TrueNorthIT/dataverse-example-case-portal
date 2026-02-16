@@ -15,4 +15,6 @@ export const config = {
   },
   /** Base URL of the dataverse-contact-api deployment, e.g. "https://my-api.vercel.app" */
   apiBaseUrl: requireEnvVar("VITE_API_BASE_URL"),
+  /** API scope partition (defaults to "default" via SDK if not set) */
+  apiScope: (import.meta.env.VITE_API_SCOPE as string) || undefined,
 };
