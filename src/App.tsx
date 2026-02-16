@@ -1,5 +1,9 @@
+import { useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRealtime } from "@truenorth-it/dataverse-client";
 import { useCases } from "./hooks/useCases";
+import { useApiClient } from "./services/caseApi";
 import { LoginScreen } from "./components/LoginScreen";
 import { Header } from "./components/Header";
 import { HeroSection } from "./components/HeroSection";
@@ -16,6 +20,17 @@ export function App() {
     loginWithRedirect,
     logout,
   } = useAuth0();
+
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  const negotiate = useCallback(() => client.negotiate(), [client]);
+
+  // Real-time: auto-invalidates React Query caches when data changes on the server
+  useRealtime({
+    negotiate,
+    queryClient,
+    enabled: isAuthenticated,
+  });
 
   const cases = useCases();
 
