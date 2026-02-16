@@ -13,7 +13,7 @@
     "@auth0/auth0-react": "^2.2.4",
     "@microsoft/signalr": "^10.0.0",
     "@tanstack/react-query": "^5.90.21",
-    "@truenorth-it/dataverse-client": "^1.0.7",
+    "@truenorth-it/dataverse-client": "^1.0.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
