@@ -26,6 +26,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         audience: config.auth0.audience,
         scope: "openid profile email",
       }}
+      useRefreshTokens
+      cacheLocation="localstorage"
     >
       <QueryClientProvider client={queryClient}>
         <App />
