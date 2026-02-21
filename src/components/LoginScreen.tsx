@@ -2,23 +2,54 @@ interface LoginScreenProps {
   onLogin: () => void;
 }
 
+function LogoSvg() {
+  return (
+    <svg viewBox="0 0 300 300" className="logo-svg">
+      <rect className="bar bar-left" x="64.3" y="225.5" width="75" height="10.7" fill="currentColor" style={{ animationDelay: "0ms" }} />
+      <rect className="bar bar-right" x="160.7" y="225.5" width="75" height="10.7" fill="currentColor" style={{ animationDelay: "110ms" }} />
+      <rect className="bar bar-left" x="64.3" y="193.4" width="75" height="10.7" fill="currentColor" style={{ animationDelay: "220ms" }} />
+      <rect className="bar bar-right" x="160.7" y="193.4" width="75" height="10.7" fill="currentColor" style={{ animationDelay: "330ms" }} />
+      <rect className="bar bar-left" x="64.3" y="161.2" width="75" height="10.7" fill="currentColor" style={{ animationDelay: "440ms" }} />
+      <rect className="bar bar-right" x="160.7" y="161.2" width="75" height="10.7" fill="currentColor" style={{ animationDelay: "550ms" }} />
+      <rect className="bar bar-left" x="64.3" y="129.1" width="75" height="10.7" fill="currentColor" style={{ animationDelay: "660ms" }} />
+      <rect className="bar bar-right" x="160.7" y="129.1" width="75" height="10.7" fill="currentColor" style={{ animationDelay: "770ms" }} />
+      <rect className="bar bar-left" x="64.3" y="96.9" width="75" height="10.7" fill="currentColor" style={{ animationDelay: "880ms" }} />
+      <rect className="bar bar-right" x="160.7" y="96.9" width="75" height="10.7" fill="currentColor" style={{ animationDelay: "990ms" }} />
+      <rect className="bar bar-capstone" x="64.3" y="64.8" width="171.4" height="10.7" fill="currentColor" style={{ animationDelay: "1150ms" }} />
+    </svg>
+  );
+}
+
 export function LoginScreen({ onLogin }: LoginScreenProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-tn-navy via-tn-navy-light to-tn-dark flex items-center justify-center font-sans">
-      <div className="text-center max-w-lg px-8">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-tn-sky/15 mb-6">
-          <svg viewBox="0 0 24 24" className="w-10 h-10 text-tn-sky" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
+    <div className="min-h-screen bg-tn-navy flex flex-col items-center justify-center font-sans">
+      <div className="loading-logo">
+        <div className="logo-wrap">
+          <div className="logo-box" />
+          <div className="logo-shimmer-clip">
+            <div className="logo-shimmer" />
+          </div>
+          <LogoSvg />
         </div>
-        <h1 className="text-3xl font-bold text-white mb-3">Case Portal</h1>
-        <p className="text-tn-sky/70 text-base leading-relaxed mb-8">
-          View and track your support cases. Sign in to get started.
-        </p>
+      </div>
+      <h1
+        className="text-3xl font-bold text-white mt-6"
+        style={{ opacity: 0, animation: "fade-up .5s ease-out 1950ms forwards" }}
+      >
+        Case Portal
+      </h1>
+      <p
+        className="text-base leading-relaxed mt-2 mb-8"
+        style={{ color: "rgba(128,208,222,.55)", opacity: 0, animation: "fade-up .5s ease-out 2100ms forwards" }}
+      >
+        View and track your support cases. Sign in to get started.
+      </p>
+      <div style={{ opacity: 0, animation: "fade-up .5s ease-out 2300ms forwards" }}>
         <button
           className="px-8 py-3 rounded-lg bg-tn-sky text-tn-navy font-semibold text-sm
-            hover:bg-tn-sky-light transition-all cursor-pointer shadow-lg shadow-tn-sky/20
-            hover:shadow-tn-sky/30 hover:-translate-y-0.5"
+            hover:bg-tn-sky-light transition-all cursor-pointer shadow-lg
+            hover:-translate-y-0.5"
+          style={{ boxShadow: "0 4px 24px rgba(128,208,222,.2)" }}
           onClick={onLogin}
         >
           Sign in
