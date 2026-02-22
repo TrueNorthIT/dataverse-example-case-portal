@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@truenorth-it/dataverse-client";
@@ -307,6 +307,8 @@ export function useCases() {
     [queryClient],
   );
 
+  const caseHistoryRef = useRef(false);
+
   const openCase = useCallback(
     (c: Case, _skipNotes?: boolean) => {
       setSelectedCase(c);
@@ -317,6 +319,8 @@ export function useCases() {
       setActivityTypeFilter("all");
       setSelectedActivity(null);
       createNoteMutation.reset();
+      window.history.pushState({ view: "case" }, "");
+      caseHistoryRef.current = true;
     },
     [activeTab, createNoteMutation],
   );
@@ -327,6 +331,23 @@ export function useCases() {
     setSelectedActivity(null);
     setActivityTypeFilter("all");
     createNoteMutation.reset();
+    if (caseHistoryRef.current) {
+      caseHistoryRef.current = false;
+      window.history.back();
+    }
+  }, [createNoteMutation]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      caseHistoryRef.current = false;
+      setSelectedCase(null);
+      setShowNoteForm(false);
+      setSelectedActivity(null);
+      setActivityTypeFilter("all");
+      createNoteMutation.reset();
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
   }, [createNoteMutation]);
 
   const createCaseNote = useCallback(
