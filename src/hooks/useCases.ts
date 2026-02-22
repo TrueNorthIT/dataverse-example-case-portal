@@ -319,7 +319,7 @@ export function useCases() {
       setActivityTypeFilter("all");
       setSelectedActivity(null);
       createNoteMutation.reset();
-      window.history.pushState({ view: "case" }, "");
+      window.history.pushState({ view: "case", caseId: c.incidentid, scope: activeTab }, "");
       caseHistoryRef.current = true;
     },
     [activeTab, createNoteMutation],
@@ -338,7 +338,18 @@ export function useCases() {
   }, [createNoteMutation]);
 
   useEffect(() => {
-    const onPopState = () => {
+    const onPopState = (e: PopStateEvent) => {
+      const state = e.state;
+      if (state?.view === "case" && state.caseId) {
+        const pool = state.scope === "team" ? teamCases : myCases;
+        const match = pool.find((c) => c.incidentid === state.caseId);
+        if (match) {
+          setSelectedCase(match);
+          setSelectedCaseScope(state.scope ?? "me");
+          caseHistoryRef.current = true;
+          return;
+        }
+      }
       caseHistoryRef.current = false;
       setSelectedCase(null);
       setShowNoteForm(false);
@@ -348,7 +359,7 @@ export function useCases() {
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [createNoteMutation]);
+  }, [myCases, teamCases, createNoteMutation]);
 
   const createCaseNote = useCallback(
     (incidentId: string) => {
