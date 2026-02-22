@@ -309,6 +309,13 @@ export function useCases() {
 
   const caseHistoryRef = useRef(false);
 
+  const getHashCaseId = (): string | null => {
+    const hash = window.location.hash;
+    return hash.startsWith("#case/") ? hash.slice(6) : null;
+  };
+
+  const pendingCaseIdRef = useRef<string | null>(getHashCaseId());
+
   const openCase = useCallback(
     (c: Case, _skipNotes?: boolean) => {
       setSelectedCase(c);
@@ -319,7 +326,11 @@ export function useCases() {
       setActivityTypeFilter("all");
       setSelectedActivity(null);
       createNoteMutation.reset();
-      window.history.pushState({ view: "case", caseId: c.incidentid, scope: activeTab }, "");
+      window.history.pushState(
+        { view: "case", caseId: c.incidentid, scope: activeTab },
+        "",
+        `#case/${c.incidentid}`,
+      );
       caseHistoryRef.current = true;
     },
     [activeTab, createNoteMutation],
@@ -334,8 +345,34 @@ export function useCases() {
     if (caseHistoryRef.current) {
       caseHistoryRef.current = false;
       window.history.back();
+    } else {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
   }, [createNoteMutation]);
+
+  // Restore case from URL hash on initial load / refresh
+  useEffect(() => {
+    if (pendingCaseIdRef.current && (myCases.length > 0 || teamCases.length > 0)) {
+      const id = pendingCaseIdRef.current;
+      pendingCaseIdRef.current = null;
+      const myMatch = myCases.find((c) => c.incidentid === id);
+      const teamMatch = !myMatch ? teamCases.find((c) => c.incidentid === id) : null;
+      const match = myMatch ?? teamMatch;
+      const scope: Tab = myMatch ? "me" : "team";
+      if (match) {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        window.history.pushState(
+          { view: "case", caseId: match.incidentid, scope },
+          "",
+          `#case/${match.incidentid}`,
+        );
+        setSelectedCase(match);
+        setSelectedCaseScope(scope);
+        setActiveTab(scope);
+        caseHistoryRef.current = true;
+      }
+    }
+  }, [myCases, teamCases]);
 
   useEffect(() => {
     const onPopState = (e: PopStateEvent) => {
