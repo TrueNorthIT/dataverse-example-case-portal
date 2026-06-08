@@ -1,4 +1,5 @@
-import type { Case, SortField, SortDir, GroupBy } from "../types/case";
+import type { Case } from "../tables/case";
+import type { SortField, SortDir, GroupBy } from "../types/ui";
 import { formatDate } from "../utils/format";
 import { statusColor, priorityBadge } from "../utils/style";
 

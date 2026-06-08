@@ -1,7 +1,7 @@
-import type { User } from "@auth0/auth0-react";
+import type { AppUser } from "../env";
 
 interface HeaderProps {
-  user?: User;
+  user?: AppUser;
   realtimeConnected?: boolean;
   onLogout: () => void;
 }
@@ -27,9 +27,6 @@ export function Header({ user, realtimeConnected, onLogout }: HeaderProps) {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-xs text-tn-sky/80">{user?.email}</span>
-          {user?.picture && (
-            <img src={user.picture} alt="" className="w-7 h-7 rounded-full border border-tn-sky/30" />
-          )}
           <button
             className="px-3 py-1.5 text-xs rounded-md border border-white/30
               bg-transparent text-white hover:bg-white/10 transition-colors cursor-pointer"

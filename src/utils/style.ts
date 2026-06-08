@@ -1,4 +1,5 @@
-import type { Case, SortField, SortDir } from "../types/case";
+import type { Case } from "../tables/case";
+import type { SortField, SortDir } from "../types/ui";
 
 export function statusColor(code: number): { bg: string; text: string; dot: string } {
   switch (code) {

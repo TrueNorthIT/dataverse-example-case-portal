@@ -1,4 +1,4 @@
-import type { Tab, GroupBy } from "../types/case";
+import type { Tab, GroupBy } from "../types/ui";
 
 interface ToolbarProps {
   activeTab: Tab;
