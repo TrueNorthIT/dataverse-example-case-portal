@@ -15,7 +15,7 @@ Example case management portal built with React + Tailwind CSS, showcasing the [
 
 1. **Register a SPA application** in your Microsoft Entra External ID (CIAM) tenant. Follow [`dataverse-contact-api/docs/SETUP-ENTRA-EXTERNAL-ID.md`](https://github.com/TrueNorthIT/dataverse-contact-api/blob/main/docs/SETUP-ENTRA-EXTERNAL-ID.md). Grant the SPA the API's access scope (e.g. `api://<api-app-id>/access_as_user`).
 2. Add the portal's URL (e.g. `https://your-portal.example.com` and `http://localhost:5173` for dev) to the SPA app's **Redirect URIs**.
-3. Copy `.env.example` to `.env` and fill in the values.
+3. Render `.env` from the committed template via 1Password: `op signin && npm run env:pull`. See [`docs/SETUP-SECRETS.md`](docs/SETUP-SECRETS.md). (Or copy `.env.example` to `.env` and fill in values manually.)
 4. Ensure the API is running with `DEFAULT__AUTH_PROVIDER=entra-external-id` (or the equivalent per-scope key).
 5. `npm install && npm run dev`
 
