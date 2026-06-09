@@ -7,10 +7,13 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "env:check": "op whoami && op vault get \"LA stack\" > /dev/null && echo \"OK: LA stack vault accessible\"",
+    "env:pull": "op inject -f -i .env.tpl -o .env && echo \"Rendered .env from 1Password\""
   },
   "dependencies": {
-    "@auth0/auth0-react": "^2.2.4",
+    "@azure/msal-browser": "^5.11.0",
+    "@azure/msal-react": "^5.4.2",
     "@microsoft/signalr": "^10.0.0",
     "@tanstack/react-query": "^5.90.21",
     "@truenorth-it/dataverse-client": "^1.0.8",

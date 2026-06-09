@@ -13,18 +13,19 @@ Example case management portal built with React + Tailwind CSS, showcasing the [
 
 ## Setup
 
-1. **Create an Auth0 SPA Application** for this portal (same tenant as the API, same audience)
-2. Copy `.env.example` to `.env` and fill in the values
-3. Add the portal's Vercel URL to the Auth0 app's **Allowed Callback URLs**, **Allowed Logout URLs**, and **Allowed Web Origins**
-4. `npm install && npm run dev`
+1. **Register a SPA application** in your Microsoft Entra External ID (CIAM) tenant. Follow [`dataverse-contact-api/docs/SETUP-ENTRA-EXTERNAL-ID.md`](https://github.com/TrueNorthIT/dataverse-contact-api/blob/main/docs/SETUP-ENTRA-EXTERNAL-ID.md). Grant the SPA the API's access scope (e.g. `api://<api-app-id>/access_as_user`).
+2. Add the portal's URL (e.g. `https://your-portal.example.com` and `http://localhost:5173` for dev) to the SPA app's **Redirect URIs**.
+3. Render `.env` from the committed template via 1Password: `op signin && npm run env:pull`. See [`docs/SETUP-SECRETS.md`](docs/SETUP-SECRETS.md). (Or copy `.env.example` to `.env` and fill in values manually.)
+4. Ensure the API is running with `DEFAULT__AUTH_PROVIDER=entra-external-id` (or the equivalent per-scope key).
+5. `npm install && npm run dev`
 
 ## Environment Variables
 
 | Variable | Description |
 |---|---|
-| `VITE_AUTH0_DOMAIN` | Your Auth0 tenant domain |
-| `VITE_AUTH0_CLIENT_ID` | SPA Application client ID (create a new one for this portal) |
-| `VITE_AUTH0_AUDIENCE` | Same API audience as the dataverse-contact-api |
+| `VITE_ENTRA_TENANT_ID` | Your Entra External ID tenant ID (GUID) |
+| `VITE_ENTRA_CLIENT_ID` | SPA application client ID |
+| `VITE_ENTRA_API_SCOPE` | API access scope, e.g. `api://<api-app-id>/access_as_user` |
 | `VITE_API_BASE_URL` | Root URL of the deployed API (e.g. `https://your-api.vercel.app`) |
 
 ## Real-time notifications
